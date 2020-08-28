@@ -1,0 +1,107 @@
+--Initialize Variables
+laserObject = nil
+soundObject = nil
+shooting = false
+delayVar = 0
+
+
+--Shooting Function
+function shoot(player)
+  laserObject = script.Parent.Parent:FindFirstChild("LaserPart")
+  if laserObject == nil then
+    --If a LaserPart does not already exist, initialize a transparent red cylinder and insert into it an audio to play
+    laserObject = Instance.new("Part")
+    laserObject.Name = "LaserPart"
+    laserObject.Shape = "Cylinder"
+    laserObject.BrickColor = BrickColor.new("Really red")
+    laserObject.Transparency = 0.5
+    laserObject.Parent = script.Parent.Parent
+    laserObject.Anchored = true
+    laserObject.CanCollide = false
+    laserObject.TopSurface = Enum.SurfaceType.Smooth
+    laserObject.BottomSurface = Enum.SurfaceType.Smooth
+    soundObject = game.Workspace.SoundLibrary.Turret:Clone()
+    soundObject.PlaybackSpeed = 1
+    soundObject.Parent = game.Workspace.SoundLibrary.Temps
+    soundObject:Play() --Begins audio playback
+    soundObject.Finish.Disabled = true
+  end
+  
+  --Make the length of the laser the distance between the turret and the player's head
+  laserObject.Size = Vector3.new((player.Character.Head.Position-script.Parent.Parent.TurretPart.Position).magnitude - 2, 0.5, 0.5)
+  --Position the center of the laser halfway beween the turret and the player's head, facing towards the player's head
+  laserObject.CFrame = CFrame.new((player.Character.Head.Position-script.Parent.Parent.TurretPart.Position)/2 + script.Parent.Parent.TurretPart.Position, player.Character.Head.Position) * CFrame.Angles(0, math.rad(90), 0)
+	
+  --After 30 loop cycles, kill the player an end the audio playback
+  delayVar = delayVar + 1
+  if delayVar >= 30 then
+    player.Character.Humanoid.Health = 0
+    soundObject:Destroy()
+  end
+end
+
+
+--Main Loop
+while true do
+  --Prevent timeout
+  wait()
+  
+  --Check for a player
+  local player = game.Players:GetChildren()[1]
+  if player ~= nil and player.Character ~= nil and player.Character.Head ~= nil then
+    
+    --Cast a ray from the turret to the player, retrieving the position at which the player is contacted
+    local ray = Ray.new(script.Parent.Parent.TurretPart.Position, (player.Character.Head.Position-script.Parent.Parent.TurretPart.Position).unit * 1000)
+    local ignoreTable = {script.Parent.Parent, game.Workspace.HoldServer.Holding.Value}
+    local part, pos = workspace:FindPartOnRayWithIgnoreList(ray, ignoreTable, false, true)
+    
+    --Confirm that nothing is between the player and the turret
+    if part ~= nil then
+      if part:IsDescendantOf(player.Character) then
+      
+        --Confirm that the player is within the range of the turret, as determined by the range of the turret's spotlight
+        if (pos-script.Parent.Parent.TurretPart.Position).magnitude <= script.Parent.Parent.TurretPart.SpotLight.Range-4 then
+          
+          --Cast a ray straight out from the turret
+          local straightRay = Ray.new(script.Parent.Parent.TurretPart.Position, script.Parent.Parent.TurretPart.CFrame.LookVector * -1)
+          
+          --Check if the player is within the angle of the spotlight 
+          --Done by taking the inverse cosine of the distance from the straight ray to the player (opposite) divided by the distance from the turret to the player (hypotenuse)
+          if math.acos(((straightRay:ClosestPoint(pos)-script.Parent.Parent.TurretPart.Position).magnitude)/((pos-script.Parent.Parent.TurretPart.Position).magnitude)) <= math.rad((script.Parent.Parent.Door.SpotLight.Angle/2)-5) then
+						
+            --If all checks are passed, shoot the player
+            shoot(player)
+            shooting = true
+            
+          --If the player is not within the angle, cancel the shooting
+          else
+            shooting = false
+            delayVar = 0
+          end
+          
+        --If the player is not within the distance, cancel the shooting
+        else
+          shooting = false
+          delayVar = 0
+        end
+        
+      --If there is something between the turret and the player, cancel the shooting
+      else
+        shooting = false
+        delayVar = 0
+      end
+      
+    --If the ray is unable to find a player (i.e: the player died), cancel the shooting
+    else
+      shooting = false
+      delayVar = 0
+    end
+  end
+  
+  --Finalize the shooting cancellation
+  if shooting == false and laserObject ~= nil then
+    laserObject:Destroy()
+    soundObject:Destroy()
+    delayVar = 0
+  end
+end
