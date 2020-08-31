@@ -57,7 +57,7 @@ while true do
         if (pos-script.Parent.Parent.TurretPart.Position).magnitude <= script.Parent.Parent.TurretPart.SpotLight.Range-4 then
           local straightRay = Ray.new(script.Parent.Parent.TurretPart.Position, script.Parent.Parent.TurretPart.CFrame.LookVector * -1)
           --Check if the player is within the angle of the spotlight 
-          --Done by taking the inverse cosine of the distance from the straight ray to the player (opposite) divided by the distance from the turret to the player (hypotenuse), giving you the interior angle, which is compared to half the spotlight's angle
+          --Done by taking the inverse cosine of the distance from the turret to the closest point on the straight ray to the player (adjacent) divided by the distance from the turret to the player (hypotenuse), giving you the interior angle, which is compared to half the spotlight's angle
           if math.acos(((straightRay:ClosestPoint(pos)-script.Parent.Parent.TurretPart.Position).magnitude)/((pos-script.Parent.Parent.TurretPart.Position).magnitude)) <= math.rad((script.Parent.Parent.Door.SpotLight.Angle/2)-5) then						
             shoot(player)
             shooting = true
