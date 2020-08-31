@@ -1,4 +1,3 @@
-#py Desktop\code\Turret.py
 
 import math
 
