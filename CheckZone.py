@@ -1,4 +1,3 @@
-
 import math
 
 #Calculates dot product
